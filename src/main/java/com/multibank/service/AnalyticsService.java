@@ -4,12 +4,12 @@ import com.multibank.domain.Transaction;
 import com.multibank.domain.TransactionCategory;
 import com.multibank.domain.TransactionDirection;
 import com.multibank.dto.SpendingChartPoint;
-import com.multibank.dto.TransactionFilterRequest;
 import com.multibank.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Comparator;
 import java.util.List;
@@ -26,12 +26,15 @@ public class AnalyticsService {
         this.transactionRepository = transactionRepository;
     }
 
-    public List<SpendingChartPoint> getMonthlySpending(TransactionFilterRequest filter) {
+    public List<SpendingChartPoint> getMonthlySpending(Long accountId,
+                                                      TransactionCategory category,
+                                                      LocalDate startDate,
+                                                      LocalDate endDate) {
         List<Transaction> transactions = transactionRepository.search(
-                filter.getAccountId(),
-                filter.getCategory(),
-                filter.getStartDate(),
-                filter.getEndDate()
+                accountId,
+                category,
+                startDate,
+                endDate
         );
 
         Map<YearMonth, BigDecimal> grouped = transactions.stream()
@@ -49,12 +52,15 @@ public class AnalyticsService {
                 .collect(Collectors.toList());
     }
 
-    public Map<TransactionCategory, BigDecimal> getCategoryTotals(TransactionFilterRequest filter) {
+    public Map<TransactionCategory, BigDecimal> getCategoryTotals(Long accountId,
+                                                                 TransactionCategory category,
+                                                                 LocalDate startDate,
+                                                                 LocalDate endDate) {
         List<Transaction> transactions = transactionRepository.search(
-                filter.getAccountId(),
-                filter.getCategory(),
-                filter.getStartDate(),
-                filter.getEndDate()
+                accountId,
+                category,
+                startDate,
+                endDate
         );
 
         return transactions.stream()

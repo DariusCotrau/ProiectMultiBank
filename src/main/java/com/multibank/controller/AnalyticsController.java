@@ -2,7 +2,6 @@ package com.multibank.controller;
 
 import com.multibank.domain.TransactionCategory;
 import com.multibank.dto.SpendingChartPoint;
-import com.multibank.dto.TransactionFilterRequest;
 import com.multibank.service.AnalyticsService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -33,8 +32,7 @@ public class AnalyticsController {
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
-        TransactionFilterRequest filter = buildFilter(accountId, category, startDate, endDate);
-        return ResponseEntity.ok(analyticsService.getMonthlySpending(filter));
+        return ResponseEntity.ok(analyticsService.getMonthlySpending(accountId, category, startDate, endDate));
     }
 
     @GetMapping("/category-totals")
@@ -44,16 +42,7 @@ public class AnalyticsController {
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
-        TransactionFilterRequest filter = buildFilter(accountId, category, startDate, endDate);
-        return ResponseEntity.ok(analyticsService.getCategoryTotals(filter));
+        return ResponseEntity.ok(analyticsService.getCategoryTotals(accountId, category, startDate, endDate));
     }
 
-    private TransactionFilterRequest buildFilter(Long accountId, TransactionCategory category, LocalDate startDate, LocalDate endDate) {
-        TransactionFilterRequest filter = new TransactionFilterRequest();
-        filter.setAccountId(accountId);
-        filter.setCategory(category);
-        filter.setStartDate(startDate);
-        filter.setEndDate(endDate);
-        return filter;
-    }
 }
