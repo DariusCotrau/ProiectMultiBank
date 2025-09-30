@@ -1,7 +1,6 @@
 package com.multibank.controller;
 
 import com.multibank.domain.TransactionCategory;
-import com.multibank.dto.TransactionFilterRequest;
 import com.multibank.dto.TransactionResponse;
 import com.multibank.service.TransactionService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -31,11 +30,6 @@ public class TransactionController {
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
     ) {
-        TransactionFilterRequest filter = new TransactionFilterRequest();
-        filter.setAccountId(accountId);
-        filter.setCategory(category);
-        filter.setStartDate(startDate);
-        filter.setEndDate(endDate);
-        return ResponseEntity.ok(transactionService.searchTransactions(filter));
+        return ResponseEntity.ok(transactionService.searchTransactions(accountId, category, startDate, endDate));
     }
 }

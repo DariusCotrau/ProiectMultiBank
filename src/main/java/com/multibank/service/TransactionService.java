@@ -1,11 +1,12 @@
 package com.multibank.service;
 
 import com.multibank.domain.Transaction;
-import com.multibank.dto.TransactionFilterRequest;
+import com.multibank.domain.TransactionCategory;
 import com.multibank.dto.TransactionResponse;
 import com.multibank.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,12 +19,15 @@ public class TransactionService {
         this.transactionRepository = transactionRepository;
     }
 
-    public List<TransactionResponse> searchTransactions(TransactionFilterRequest filterRequest) {
+    public List<TransactionResponse> searchTransactions(Long accountId,
+                                                        TransactionCategory category,
+                                                        LocalDate startDate,
+                                                        LocalDate endDate) {
         List<Transaction> transactions = transactionRepository.search(
-                filterRequest.getAccountId(),
-                filterRequest.getCategory(),
-                filterRequest.getStartDate(),
-                filterRequest.getEndDate()
+                accountId,
+                category,
+                startDate,
+                endDate
         );
 
         return transactions.stream()
