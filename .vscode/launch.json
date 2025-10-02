@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-MultiBankApplication<multibank-aggregator>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.multibank.MultiBankApplication",
+            "projectName": "multibank-aggregator",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

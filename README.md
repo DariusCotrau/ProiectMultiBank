@@ -11,27 +11,42 @@ Aplicatie Spring Boot care integreaza conturile de la BCR si Banca Transilvania 
 - Administrarea planurilor de economisire: creare, actualizare, contributii si stergere.
 - Generarea unui cod QR (imagine PNG codificata Base64) pentru orice payload de plata.
 
-## Pornire
+## Pornire (Desktop JavaFX)
 
-1. Asigurati-va ca aveti instalat Java 17 si Maven.
-2. Rulati urmatoarea comanda pentru a porni aplicatia:
+Aplicația a fost transformată într-un UI desktop JavaFX (fără browser).
+
+- Dezvoltare (rulare rapidă):
 
 ```bash
-mvn spring-boot:run
+mvn -DskipTests javafx:run
 ```
 
-Aplicatia va porni pe `http://localhost:8080`.
+- Rulare din jar (cu toate dependențele pe classpath):
 
-## Endpoints utile
+```bash
+mvn -DskipTests package
+java -cp target\multibank-aggregator-0.0.1-SNAPSHOT.jar;target\lib\* com.multibank.desktop.DesktopApp
+```
 
-- `POST /api/banks/sync` – sincronizeaza toate conturile si tranzactiile disponibile (foloseste date mock daca nu sunt configurate API-urile reale).
-- `GET /api/banks/accounts` – listeaza conturile existente in platforma.
-- `GET /api/transactions` – filtreaza tranzactii dupa cont, categorie si interval de timp.
-- `GET /api/analytics/monthly-spending` – totalul cheltuielilor pe luni pentru criteriile selectate.
-- `GET /api/analytics/category-totals` – totalul cheltuielilor pe categorii pentru criteriile selectate.
-- `POST /api/savings` – creeaza un nou plan de economisire.
-- `POST /api/savings/{id}/contribute` – adauga o contributie la un plan.
-- `POST /api/qr` – genereaza un cod QR pe baza unui payload.
+## Installer Windows (EXE) cu jpackage
+
+Am adăugat un profil Maven pentru a genera un installer Windows folosind jpackage. Necesită JDK 17 cu jpackage disponibil în `JAVA_HOME`.
+
+1. Build aplicație și dependențe:
+
+```bash
+mvn -P installer-windows -DskipTests package
+```
+
+2. Găsești installerul la:
+
+```
+target/installer/MultiBank Desktop-*.exe
+```
+
+## Endpoints utile (pentru integrare/diagnostic)
+
+Aplicația desktop folosește direct serviciile interne Spring. API-ul HTTP există în continuare pentru diagnostic sau integrare externă (dacă porniți explicit web-ul), dar UI nu mai depinde de browser.
 
 ## Configurarea API-urilor bancare reale
 
