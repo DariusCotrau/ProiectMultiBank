@@ -1,6 +1,6 @@
 # ProiectMultiBank
 
-Aplicatie Spring Boot care integreaza conturile de la BCR si Banca Transilvania intr-un singur backend, oferind functionalitati de analiza a cheltuielilor, filtrare a tranzactiilor, planuri de economisire si generare de coduri QR pentru plati.
+Aplicatie Spring Boot care integreaza conturile bancare intr-un singur backend, oferind functionalitati de analiza a cheltuielilor, filtrare a tranzactiilor, planuri de economisire si generare de coduri QR pentru plati.
 
 ## Functionalitati principale
 
