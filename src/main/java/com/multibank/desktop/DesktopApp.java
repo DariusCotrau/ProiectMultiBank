@@ -25,16 +25,18 @@ import javafx.scene.chart.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+import jfxtras.styles.jmetro.JMetro;
+import jfxtras.styles.jmetro.Style;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,6 +55,7 @@ public class DesktopApp extends Application {
     private final TableView<TransactionResponse> transactionsTable = new TableView<>();
     private final TableView<SavingsPlanResponse> savingsTable = new TableView<>();
     private final Label statusBar = new Label("Gata.");
+    private JMetro jMetro;
 
     @Override
     public void init() {
@@ -72,6 +75,7 @@ public class DesktopApp extends Application {
         stage.setTitle("MultiBank Desktop");
 
         TabPane tabs = new TabPane();
+        tabs.getStyleClass().add("app-tabs");
         tabs.getTabs().add(buildAccountsTab());
         tabs.getTabs().add(buildTransactionsTab());
         tabs.getTabs().add(buildAnalyticsTab());
@@ -79,11 +83,55 @@ public class DesktopApp extends Application {
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
         BorderPane root = new BorderPane();
+        root.getStyleClass().add("app-root");
         root.setCenter(tabs);
+        // Sidebar navigation
+        VBox sidebar = buildSidebar(tabs);
+        root.setLeft(sidebar);
         statusBar.setPadding(new Insets(6, 10, 6, 10));
         root.setBottom(statusBar);
 
+        // Header (title + theme toggle)
+        HBox header = new HBox();
+        header.getStyleClass().add("app-header");
+        Label title = new Label("MultiBank Desktop");
+        title.getStyleClass().add("app-title");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        ToggleButton themeToggle = new ToggleButton("Dark");
+        themeToggle.getStyleClass().add("btn-ghost");
+        header.getChildren().addAll(title, spacer, themeToggle);
+        root.setTop(header);
+
         Scene scene = new Scene(root, 1100, 700);
+        // Apply JMetro modern theme and our accent stylesheet
+        try {
+            jMetro = new JMetro(Style.LIGHT);
+            jMetro.setScene(scene);
+        } catch (Throwable ignored) {}
+        try {
+            scene.getStylesheets().add(
+                    Objects.requireNonNull(getClass().getResource("/desktop/styles.css")).toExternalForm()
+            );
+        } catch (Exception ignored) {}
+
+        // Toggle light/dark theme
+        themeToggle.setOnAction(e -> {
+            if (jMetro != null) {
+                if (themeToggle.isSelected()) {
+                    jMetro.setStyle(Style.DARK);
+                    themeToggle.setText("Light");
+                    if (!root.getStyleClass().contains("theme-dark")) {
+                        root.getStyleClass().add("theme-dark");
+                    }
+                } else {
+                    jMetro.setStyle(Style.LIGHT);
+                    themeToggle.setText("Dark");
+                    root.getStyleClass().remove("theme-dark");
+                }
+            }
+        });
+
         stage.setScene(scene);
         stage.show();
 
@@ -91,6 +139,38 @@ public class DesktopApp extends Application {
         reloadAccounts();
     }
 
+    private VBox buildSidebar(TabPane tabs) {
+        VBox box = new VBox(8);
+        box.getStyleClass().add("app-sidebar");
+        ToggleGroup group = new ToggleGroup();
+
+        ToggleButton btnDashboard = makeNavButton("Dashboard", group);
+        ToggleButton btnAccounts = makeNavButton("Conturi", group);
+        ToggleButton btnTransactions = makeNavButton("Tranzacții", group);
+        ToggleButton btnAnalytics = makeNavButton("Analiză", group);
+        ToggleButton btnSavings = makeNavButton("Economii", group);
+
+        btnDashboard.setSelected(true);
+        // Map to tabs: 0=Conturi,1=Tranzacții,2=Analiză,3=Economii
+        btnDashboard.setOnAction(e -> tabs.getSelectionModel().select(2));
+        btnAccounts.setOnAction(e -> tabs.getSelectionModel().select(0));
+        btnTransactions.setOnAction(e -> tabs.getSelectionModel().select(1));
+        btnAnalytics.setOnAction(e -> tabs.getSelectionModel().select(2));
+        btnSavings.setOnAction(e -> tabs.getSelectionModel().select(3));
+
+        box.getChildren().addAll(btnDashboard, btnAccounts, btnTransactions, btnAnalytics, btnSavings);
+        return box;
+    }
+
+    private ToggleButton makeNavButton(String text, ToggleGroup group) {
+        ToggleButton b = new ToggleButton(text);
+        b.getStyleClass().add("nav-btn");
+        b.setMaxWidth(Double.MAX_VALUE);
+        b.setToggleGroup(group);
+        return b;
+    }
+
+    @SuppressWarnings("unchecked")
     private Tab buildAccountsTab() {
         Tab tab = new Tab("Conturi");
 
@@ -114,14 +194,7 @@ public class DesktopApp extends Application {
         currencyCol.setCellValueFactory(c -> new SimpleStringProperty(nullSafe(c.getValue().getCurrency())));
         TableColumn<BankAccountResponse, BigDecimal> balanceCol = new TableColumn<>("Sold");
         balanceCol.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getBalance()));
-        List<TableColumn<BankAccountResponse, ?>> accCols = new ArrayList<>();
-        accCols.add(bankCol);
-        accCols.add(numberCol);
-        accCols.add(ibanCol);
-        accCols.add(typeCol);
-        accCols.add(currencyCol);
-        accCols.add(balanceCol);
-        accountsTable.getColumns().setAll(accCols);
+        accountsTable.getColumns().setAll(bankCol, numberCol, ibanCol, typeCol, currencyCol, balanceCol);
 
         VBox content = new VBox(5, toolbar, accountsTable);
         VBox.setVgrow(accountsTable, Priority.ALWAYS);
@@ -134,30 +207,50 @@ public class DesktopApp extends Application {
         return tab;
     }
 
-    private Tab buildAnalyticsTab() {
-        Tab tab = new Tab("Analiză");
+    	private Tab buildAnalyticsTab() {
+		Tab tab = new Tab("Analiza");
 
-        CategoryAxis xAxis = new CategoryAxis();
-        NumberAxis yAxis = new NumberAxis();
-        LineChart<String, Number> monthlyChart = new LineChart<>(xAxis, yAxis);
-        monthlyChart.setTitle("Cheltuieli lunare");
+		// KPI row
+		HBox kpiRow = new HBox(12);
+		kpiRow.getStyleClass().add("kpi-row");
+		VBox k1 = createKpiCard("Luna aceasta", "1.935,50€", "5.600,00€", 0.34);
+		VBox k2 = createKpiCard("Saptamana aceasta", "1.935,50€", "1.400,00€", 0.60);
+		VBox k3 = createKpiCard("Astazi", "0,00€", "200,00€", 0.00);
+		kpiRow.getChildren().addAll(k1, k2, k3);
 
-        PieChart categoryChart = new PieChart();
-        categoryChart.setTitle("Distribuție pe categorii");
+		// Chart area
+		CategoryAxis xAxis = new CategoryAxis();
+		NumberAxis yAxis = new NumberAxis();
+		LineChart<String, Number> monthlyChart = new LineChart<>(xAxis, yAxis);
+		monthlyChart.setLegendVisible(false);
+		monthlyChart.setAnimated(false);
 
-        Button refreshBtn = new Button("Actualizează");
-        HBox toolbar = new HBox(10, refreshBtn);
-        toolbar.setPadding(new Insets(10));
+		Button refreshBtn = new Button("Actualizeaza");
+		HBox toolbar = new HBox(10, refreshBtn);
+		toolbar.setPadding(new Insets(10));
 
-        VBox content = new VBox(8, toolbar, monthlyChart, categoryChart);
-        content.setPadding(new Insets(10));
-        VBox.setVgrow(monthlyChart, Priority.SOMETIMES);
-        VBox.setVgrow(categoryChart, Priority.SOMETIMES);
+		VBox content = new VBox(10, kpiRow, toolbar, monthlyChart);
+		content.setPadding(new Insets(12));
+		VBox.setVgrow(monthlyChart, Priority.ALWAYS);
 
-        refreshBtn.setOnAction(e -> reloadAnalytics(monthlyChart, categoryChart));
-        tab.setContent(content);
-        return tab;
-    }
+		refreshBtn.setOnAction(e -> reloadAnalytics(monthlyChart, new PieChart()));
+		tab.setContent(content);
+		return tab;
+	}
+
+	private VBox createKpiCard(String title, String value, String sub, double progress) {
+		ProgressIndicator ring = new ProgressIndicator(progress);
+		ring.setPrefSize(44, 44);
+		Label lTitle = new Label(title);
+		lTitle.getStyleClass().add("kpi-title");
+		Label lValue = new Label(value);
+		lValue.getStyleClass().add("kpi-value");
+		Label lSub = new Label(sub);
+		lSub.getStyleClass().add("kpi-sub");
+		VBox box = new VBox(6, ring, lTitle, lValue, lSub);
+		box.getStyleClass().add("kpi-card");
+		return box;
+	}
 
     private Tab buildTransactionsTab() {
         Tab tab = new Tab("Tranzacții");
@@ -198,14 +291,7 @@ public class DesktopApp extends Application {
         amtCol.setCellValueFactory(c -> new SimpleStringProperty(
                 (c.getValue().getAmount() == null ? "" : c.getValue().getAmount().toPlainString()) +
                         (c.getValue().getCurrency() == null ? "" : (" " + c.getValue().getCurrency()))));
-        List<TableColumn<TransactionResponse, ?>> txCols = new ArrayList<>();
-        txCols.add(dateCol);
-        txCols.add(descCol);
-        txCols.add(merchCol);
-        txCols.add(catCol);
-        txCols.add(dirCol);
-        txCols.add(amtCol);
-        transactionsTable.getColumns().setAll(txCols);
+        transactionsTable.getColumns().setAll(dateCol, descCol, merchCol, catCol, dirCol, amtCol);
 
         VBox content = new VBox(6, filters, transactionsTable);
         content.setPadding(new Insets(10));
@@ -274,14 +360,7 @@ public class DesktopApp extends Application {
                 c.getValue().getFocusCategory() == null ? "" : c.getValue().getFocusCategory().name()));
         TableColumn<SavingsPlanResponse, String> progCol = new TableColumn<>("Progres");
         progCol.setCellValueFactory(c -> new SimpleStringProperty(String.format("%.2f%%", c.getValue().getProgress())));
-        List<TableColumn<SavingsPlanResponse, ?>> spCols = new ArrayList<>();
-        spCols.add(nameCol);
-        spCols.add(tgtCol);
-        spCols.add(curCol);
-        spCols.add(dateCol);
-        spCols.add(fcatCol);
-        spCols.add(progCol);
-        savingsTable.getColumns().setAll(spCols);
+        savingsTable.getColumns().setAll(nameCol, tgtCol, curCol, dateCol, fcatCol, progCol);
 
         // Actions on selection
         Button contributeBtn = new Button("Contribuie");
@@ -470,9 +549,9 @@ public class DesktopApp extends Application {
     }
 
     private void showError(Throwable t) {
-        final Throwable ex = (t == null) ? new RuntimeException("Eroare necunoscută") : t;
-        setStatus("Eroare: " + ex.getMessage());
-        Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, Objects.toString(ex.getMessage(), String.valueOf(ex))).showAndWait());
+        final Throwable error = t == null ? new RuntimeException("Eroare necunoscută") : t;
+        setStatus("Eroare: " + error.getMessage());
+        Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, Objects.toString(error.getMessage(), String.valueOf(error))).showAndWait());
     }
 
     private String nullSafe(String value) {

@@ -80,7 +80,35 @@
             <version>${javafx.version}</version>
             <classifier>win</classifier>
         </dependency>
-    </dependencies>
+        <!-- JMetro: modern JavaFX theme -->
+        <dependency>
+            <groupId>org.jfxtras</groupId>
+            <artifactId>jmetro</artifactId>
+            <version>11.6.15</version>
+        </dependency>
+        <!-- Ikonli for vector icons in JavaFX buttons -->
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-javafx</artifactId>
+            <version>12.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-fontawesome5-pack</artifactId>
+            <version>12.3.1</version>
+        </dependency>
+</dependencies>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>sonatype</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/releases/</url>
+        </pluginRepository>
+    </pluginRepositories>
 
     <build>
         <plugins>
@@ -134,35 +162,35 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.panteleyev</groupId>
-                        <artifactId>jpackage-maven-plugin</artifactId>
-                        <version>1.9.1</version>
-                        <configuration>
-                            <input>${project.build.directory}</input>
-                            <dest>${project.build.directory}/installer</dest>
-                            <name>MultiBank Desktop</name>
-                            <vendor>MultiBank</vendor>
-                            <appVersion>${project.version}</appVersion>
-                            <type>exe</type>
-                            <winConsole>false</winConsole>
-                            <winShortcut>true</winShortcut>
-                            <winMenu>true</winMenu>
-                            <winMenuGroup>MultiBank</winMenuGroup>
-                            <icon>${jpackage.icon}</icon>
-                            <mainJar>${project.build.finalName}.jar</mainJar>
-                            <mainClass>com.multibank.desktop.DesktopApp</mainClass>
-                            <classPath>lib/*</classPath>
-                            <javaOptions>
-                                <javaOption>-Xmx512m</javaOption>
-                            </javaOptions>
-                        </configuration>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
                         <executions>
                             <execution>
-                                <id>package-with-jpackage</id>
+                                <id>jpackage-exe</id>
                                 <phase>package</phase>
                                 <goals>
-                                    <goal>jpackage</goal>
+                                    <goal>exec</goal>
                                 </goals>
+                                <configuration>
+                                    <executable>jpackage</executable>
+                                    <arguments>
+                                        <argument>--type</argument>
+                                        <argument>exe</argument>
+                                        <argument>--name</argument>
+                                        <argument>MultiBank Desktop</argument>
+                                        <argument>--input</argument>
+                                        <argument>${project.build.directory}</argument>
+                                        <argument>--dest</argument>
+                                        <argument>${project.build.directory}/installer</argument>
+                                        <argument>--main-jar</argument>
+                                        <argument>${project.build.finalName}.jar</argument>
+                                        <argument>--main-class</argument>
+                                        <argument>org.springframework.boot.loader.launch.JarLauncher</argument>
+                                        <argument>--vendor</argument>
+                                        <argument>MultiBank</argument>
+                                    </arguments>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
@@ -174,35 +202,35 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.panteleyev</groupId>
-                        <artifactId>jpackage-maven-plugin</artifactId>
-                        <version>1.9.1</version>
-                        <configuration>
-                            <input>${project.build.directory}</input>
-                            <dest>${project.build.directory}/installer</dest>
-                            <name>MultiBank Desktop</name>
-                            <vendor>MultiBank</vendor>
-                            <appVersion>${project.version}</appVersion>
-                            <type>msi</type>
-                            <winConsole>false</winConsole>
-                            <winShortcut>true</winShortcut>
-                            <winMenu>true</winMenu>
-                            <winMenuGroup>MultiBank</winMenuGroup>
-                            <icon>${jpackage.icon}</icon>
-                            <mainJar>${project.build.finalName}.jar</mainJar>
-                            <mainClass>com.multibank.desktop.DesktopApp</mainClass>
-                            <classPath>lib/*</classPath>
-                            <javaOptions>
-                                <javaOption>-Xmx512m</javaOption>
-                            </javaOptions>
-                        </configuration>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
                         <executions>
                             <execution>
-                                <id>package-with-jpackage-msi</id>
+                                <id>jpackage-msi</id>
                                 <phase>package</phase>
                                 <goals>
-                                    <goal>jpackage</goal>
+                                    <goal>exec</goal>
                                 </goals>
+                                <configuration>
+                                    <executable>jpackage</executable>
+                                    <arguments>
+                                        <argument>--type</argument>
+                                        <argument>msi</argument>
+                                        <argument>--name</argument>
+                                        <argument>MultiBank Desktop</argument>
+                                        <argument>--input</argument>
+                                        <argument>${project.build.directory}</argument>
+                                        <argument>--dest</argument>
+                                        <argument>${project.build.directory}/installer</argument>
+                                        <argument>--main-jar</argument>
+                                        <argument>${project.build.finalName}.jar</argument>
+                                        <argument>--main-class</argument>
+                                        <argument>org.springframework.boot.loader.launch.JarLauncher</argument>
+                                        <argument>--vendor</argument>
+                                        <argument>MultiBank</argument>
+                                    </arguments>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

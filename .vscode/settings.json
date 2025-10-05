@@ -1,3 +1,10 @@
 {
-    "java.compile.nullAnalysis.mode": "automatic"
+  "files.associations": {
+    "**/src/main/resources/desktop/*.css": "javafx-css"
+  },
+  "css.lint.unknownProperties": "ignore",
+  "css.lint.unknownVendorSpecificProperties": "ignore",
+  "css.validate": true,
+  "java.compile.nullAnalysis.mode": "automatic"
 }
+

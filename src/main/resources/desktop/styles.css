@@ -1,0 +1,200 @@
+/* Modern theme for MultiBank Desktop (JavaFX) */
+
+.app-root {
+    -color-bg: #f5f7fb;
+    -color-surface: #ffffff;
+    -color-text: #0f172a;
+    -color-muted: #64748b;
+    -color-border: #e2e8f0;
+    -color-accent: #2563eb;
+    -color-accent-soft: #e8efff;
+    -color-success: #16a34a;
+    -fx-background-color: -color-bg;
+    -fx-font-family: 'Segoe UI', 'Inter', 'Arial', sans-serif;
+}
+/* Dark theme overrides */
+.app-root.theme-dark {
+    -color-bg: #0b0e14;
+    -color-surface: #0f1116;
+    -color-text: #e5e7eb;
+    -color-muted: #9aa3b3;
+    -color-border: #1f2430;
+    -color-accent: #4f86ff;
+    -color-accent-soft: #1b2335;
+    -fx-background-color: -color-bg;
+}
+
+/* Tabs */
+.tab-pane .tab-header-area {
+    -fx-background-color: transparent;
+    -fx-padding: 10 10 0 10;
+}
+.tab-pane .tab-header-background {
+    -fx-background-color: transparent;
+}
+.tab-pane .tab {
+    -fx-background-radius: 10;
+    -fx-background-insets: 0;
+}
+.tab-pane .tab:selected {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-radius: 10;
+}
+.tab-pane .tab-label {
+    -fx-font-weight: 700;
+    -fx-text-fill: -color-text;
+    -fx-padding: 6 14 6 14;
+}
+
+/* Toolbars */
+.toolbar {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-padding: 10 12 10 12;
+}
+
+/* Buttons */
+.button {
+    -fx-background-color: -color-accent;
+    -fx-text-fill: white;
+    -fx-font-weight: 700;
+    -fx-background-radius: 999;
+    -fx-padding: 8 16 8 16;
+}
+.button:hover {
+    -fx-background-color: derive(-color-accent, -10%);
+}
+.btn-ghost {
+    -fx-background-color: transparent;
+    -fx-border-color: -color-accent;
+    -fx-text-fill: -color-accent;
+    -fx-border-radius: 999;
+    -fx-background-radius: 999;
+}
+.btn-ghost:hover {
+    -fx-background-color: -color-accent-soft;
+}
+
+/* Tables */
+.table-view {
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-color: -color-border;
+}
+.table-view .column-header-background {
+    -fx-background-color: #f3f6fb;
+    -fx-background-radius: 14 14 0 0;
+}
+.table-view .column-header .label {
+    -fx-text-fill: -color-muted;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-padding: 10 8 10 8;
+}
+.table-view .cell {
+    -fx-padding: 10 8 10 8;
+}
+.table-row-cell:filled:selected, .table-row-cell:filled:selected .cell {
+    -fx-background-color: -color-accent-soft;
+}
+.table-row-cell:filled:hover {
+    -fx-background-color: #eef2ff;
+}
+
+/* Status bar */
+.status-bar {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-padding: 8 10 8 10;
+    -fx-text-fill: -color-muted;
+}
+
+/* Charts */
+.chart-plot-background {
+    -fx-background-color: -color-surface;
+}
+.chart-legend {
+    -fx-background-color: transparent;
+}
+.app-header {
+    -fx-background-color: linear-gradient(to right, derive(-color-accent, 0%), derive(-color-accent, -10%));
+    -fx-padding: 12 16 12 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 16, 0.15, 0, 4);
+    -fx-alignment: center-left;
+}
+
+.app-title {
+    -fx-text-fill: white;
+    -fx-font-size: 18px;
+    -fx-font-weight: 700;
+}
+
+.btn-primary {
+    -fx-background-color: -color-accent;
+    -fx-text-fill: white;
+}
+
+.btn-ghost {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(255,255,255,0.8);
+    -fx-text-fill: white;
+    -fx-border-radius: 999;
+    -fx-background-radius: 999;
+}
+.app-tabs .tab-header-area {
+    -fx-max-height: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+}
+
+.app-sidebar {
+    -fx-background-color: #0f1116;
+    -fx-padding: 16 12 16 12;
+    -fx-spacing: 8;
+    -fx-min-width: 180;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 24, 0.2, 0, 0);
+}
+
+.nav-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #c7d2fe;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 10 12 10 12;
+    -fx-background-radius: 8;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.nav-btn:hover {
+    -fx-background-color: #171a22;
+}
+.nav-btn:selected {
+    -fx-background-color: #1b2030;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: 700;
+}
+
+/* KPI cards */
+.kpi-row {
+    -fx-spacing: 12;
+}
+.kpi-card {
+    -fx-background-color: #11151c;
+    -fx-background-radius: 14;
+    -fx-padding: 14;
+    -fx-border-color: #1f2430;
+    -fx-border-radius: 14;
+    -fx-pref-width: 220;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.25), 16, 0.2, 0, 4);
+}
+.kpi-title { -fx-text-fill: #8a94a7; -fx-font-size: 11px; -fx-font-weight: 700; }
+.kpi-value { -fx-text-fill: #ffffff; -fx-font-size: 20px; -fx-font-weight: 800; }
+.kpi-sub   { -fx-text-fill: #9aa3b3; -fx-font-size: 12px; }
+
+/* Charts accent */
+.chart-series-line { -fx-stroke: -color-accent; -fx-stroke-width: 2; }
+.chart-vertical-grid-lines { -fx-stroke: #20232b; }
+.chart-horizontal-grid-lines { -fx-stroke: #20232b; }
