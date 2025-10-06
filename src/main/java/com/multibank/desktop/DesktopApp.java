@@ -29,6 +29,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Modality;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -40,6 +41,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DesktopApp extends Application {
 
@@ -56,6 +58,8 @@ public class DesktopApp extends Application {
     private final TableView<SavingsPlanResponse> savingsTable = new TableView<>();
     private final Label statusBar = new Label("Gata.");
     private JMetro jMetro;
+    private String currentUser;
+    private final Map<String, String> users = new ConcurrentHashMap<>();
 
     @Override
     public void init() {
@@ -68,10 +72,19 @@ public class DesktopApp extends Application {
         analyticsService = springContext.getBean(AnalyticsService.class);
         transactionService = springContext.getBean(TransactionService.class);
         savingsPlanService = springContext.getBean(SavingsPlanService.class);
+
+        // Hardcoded default user until DB integration
+        users.putIfAbsent("dariusc", "parola123");
     }
 
     @Override
     public void start(Stage stage) {
+        // Simple login gate (hardcoded user: "dariusc" / parola "parola123")
+        boolean ok = showLoginDialog(stage);
+        if (!ok) {
+            Platform.exit();
+            return;
+        }
         stage.setTitle("MultiBank Desktop");
 
         TabPane tabs = new TabPane();
@@ -91,16 +104,18 @@ public class DesktopApp extends Application {
         statusBar.setPadding(new Insets(6, 10, 6, 10));
         root.setBottom(statusBar);
 
-        // Header (title + theme toggle)
+        // Header (title + user + theme toggle)
         HBox header = new HBox();
         header.getStyleClass().add("app-header");
         Label title = new Label("MultiBank Desktop");
         title.getStyleClass().add("app-title");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label userLabel = new Label(currentUser == null ? "" : ("Utilizator: " + currentUser));
+        userLabel.setStyle("-fx-text-fill: rgba(255,255,255,0.9);");
         ToggleButton themeToggle = new ToggleButton("Dark");
         themeToggle.getStyleClass().add("btn-ghost");
-        header.getChildren().addAll(title, spacer, themeToggle);
+        header.getChildren().addAll(title, spacer, userLabel, themeToggle);
         root.setTop(header);
 
         Scene scene = new Scene(root, 1100, 700);
@@ -137,6 +152,146 @@ public class DesktopApp extends Application {
 
         // Load initial data
         reloadAccounts();
+    }
+
+    private boolean showLoginDialog(Stage owner) {
+        final Stage dialog = new Stage();
+        dialog.initOwner(owner);
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle("Autentificare");
+
+        Label title = new Label("Autentificare");
+        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        Label hint = new Label("Utilizator implicit: 'dariusc' / parola: 'parola123'");
+
+        TextField userField = new TextField();
+        userField.setPromptText("Utilizator");
+        PasswordField passField = new PasswordField();
+        passField.setPromptText("Parola");
+        passField.setPromptText("Parola (opțional)");
+
+        Label error = new Label();
+        error.setStyle("-fx-text-fill: #ff6b6b;");
+
+        Button loginBtn = new Button("Login");
+        Button signupBtn = new Button("Signup");
+        Button cancelBtn = new Button("Renunță");
+        loginBtn.setDefaultButton(true);
+        cancelBtn.setCancelButton(true);
+
+        Runnable attempt = () -> {
+            String u = userField.getText() == null ? "" : userField.getText().trim();
+            if ("dariusc".equalsIgnoreCase(u)) {
+                currentUser = u;
+                dialog.close();
+            } else {
+                error.setText("Utilizator invalid. Încearcă: dariusc");
+            }
+        };
+        loginBtn.setOnAction(e -> attempt.run());
+        // Override handler to enforce username+password via in-memory users
+        loginBtn.setOnAction(e -> {
+            String u = userField.getText() == null ? "" : userField.getText().trim();
+            String p = passField.getText() == null ? "" : passField.getText();
+            String stored = users.get(u.toLowerCase());
+            if (stored != null && stored.equals(p)) {
+                currentUser = u;
+                dialog.close();
+            } else {
+                error.setText("Date de autentificare invalide.");
+            }
+        });
+        // Signup opens registration dialog and auto-logs in
+        signupBtn.setOnAction(e -> {
+            String created = showSignupDialog(dialog);
+            if (created != null) {
+                currentUser = created;
+                dialog.close();
+            }
+        });
+        cancelBtn.setOnAction(e -> { currentUser = null; dialog.close(); });
+        // Ensure final prompt text is set correctly
+        passField.setPromptText("Parola");
+
+        HBox actions = new HBox(10, loginBtn, signupBtn, cancelBtn);
+        VBox box = new VBox(10, title, hint, userField, passField, error, actions);
+        box.setPadding(new Insets(16));
+        Scene scene = new Scene(box, 360, 220);
+        try {
+            // Apply same look if available
+            if (jMetro == null) {
+                jMetro = new JMetro(Style.LIGHT);
+            }
+            jMetro.setScene(scene);
+            try {
+                scene.getStylesheets().add(
+                        Objects.requireNonNull(getClass().getResource("/desktop/styles.css")).toExternalForm()
+                );
+            } catch (Exception ignored) {}
+        } catch (Throwable ignored) {}
+        dialog.setScene(scene);
+        dialog.showAndWait();
+        return currentUser != null;
+    }
+
+    private String showSignupDialog(Stage owner) {
+        final Stage dialog = new Stage();
+        dialog.initOwner(owner);
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        dialog.setTitle("Înregistrare");
+
+        Label title = new Label("Creează cont nou");
+        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+
+        TextField userField = new TextField();
+        userField.setPromptText("Utilizator");
+        PasswordField passField = new PasswordField();
+        passField.setPromptText("Parola");
+        PasswordField confirmField = new PasswordField();
+        confirmField.setPromptText("Confirmă parola");
+
+        Label error = new Label();
+        error.setStyle("-fx-text-fill: #ff6b6b;");
+
+        Button createBtn = new Button("Creează");
+        Button cancelBtn = new Button("Anulează");
+        createBtn.setDefaultButton(true);
+        cancelBtn.setCancelButton(true);
+
+        final String[] created = new String[1];
+        Runnable attempt = () -> {
+            String uRaw = userField.getText() == null ? "" : userField.getText().trim();
+            String u = uRaw.toLowerCase();
+            String p = passField.getText() == null ? "" : passField.getText();
+            String c = confirmField.getText() == null ? "" : confirmField.getText();
+            if (uRaw.isEmpty()) { error.setText("Introdu un nume de utilizator."); return; }
+            if (p.length() < 4) { error.setText("Parola trebuie să aibă ≥ 4 caractere."); return; }
+            if (!p.equals(c)) { error.setText("Parolele nu coincid."); return; }
+            if (users.containsKey(u)) { error.setText("Utilizatorul există deja."); return; }
+            users.put(u, p);
+            created[0] = uRaw;
+            dialog.close();
+        };
+
+        createBtn.setOnAction(e -> attempt.run());
+        cancelBtn.setOnAction(e -> { created[0] = null; dialog.close(); });
+
+        HBox actions = new HBox(10, createBtn, cancelBtn);
+        VBox box = new VBox(10, title, userField, passField, confirmField, error, actions);
+        box.setPadding(new Insets(16));
+        Scene scene = new Scene(box, 360, 240);
+        try {
+            if (jMetro == null) jMetro = new JMetro(Style.LIGHT);
+            jMetro.setScene(scene);
+            try {
+                scene.getStylesheets().add(
+                        Objects.requireNonNull(getClass().getResource("/desktop/styles.css")).toExternalForm()
+                );
+            } catch (Exception ignored) {}
+        } catch (Throwable ignored) {}
+        dialog.setScene(scene);
+        dialog.showAndWait();
+        return created[0];
     }
 
     private VBox buildSidebar(TabPane tabs) {
