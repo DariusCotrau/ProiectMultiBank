@@ -1,6 +1,6 @@
 # ProiectMultiBank
 
-Aplicatie Spring Boot care integreaza conturile bancare intr-un singur backend, oferind functionalitati de analiza a cheltuielilor, filtrare a tranzactiilor, planuri de economisire si generare de coduri QR pentru plati.
+Aplicatie Java (fără Spring Boot) care integreaza conturile bancare intr-un singur backend JVM/JavaFX, oferind functionalitati de analiza a cheltuielilor, filtrare a tranzactiilor, planuri de economisire si generare de coduri QR pentru plati.
 
 ## Functionalitati principale
 
@@ -13,7 +13,7 @@ Aplicatie Spring Boot care integreaza conturile bancare intr-un singur backend, 
 
 ## Pornire (Desktop JavaFX)
 
-Aplicația a fost transformată într-un UI desktop JavaFX (fără browser).
+Aplicația rulează ca UI desktop JavaFX (fără browser), fără Spring. Persistența este realizată cu JPA/Hibernate + H2, iar legarea componentelor (servicii, repository‑uri) este făcută manual pentru un runtime mai ușor pe desktop.
 
 - Dezvoltare (rulare rapidă):
 
@@ -24,13 +24,13 @@ mvn -DskipTests javafx:run
 - Rulare din jar (cu toate dependențele pe classpath):
 
 ```bash
-mvn -DskipTests package
+mvn -Dmaven.test.skip=true package
 java -cp target\multibank-aggregator-0.0.1-SNAPSHOT.jar;target\lib\* com.multibank.desktop.DesktopApp
 ```
 
 ## Installer Windows (EXE) cu jpackage
 
-Am adăugat un profil Maven pentru a genera un installer Windows folosind jpackage. Necesită JDK 17 cu jpackage disponibil în `JAVA_HOME`.
+Există un profil Maven pentru a genera un installer Windows folosind jpackage. Necesită JDK 17 cu jpackage disponibil în `JAVA_HOME`.
 
 1. Build aplicație și dependențe:
 
@@ -44,25 +44,14 @@ mvn -P installer-windows -DskipTests package
 target/installer/MultiBank Desktop-*.exe
 ```
 
-## Endpoints utile (pentru integrare/diagnostic)
+## Observații
 
-Aplicația desktop folosește direct serviciile interne Spring. API-ul HTTP există în continuare pentru diagnostic sau integrare externă (dacă porniți explicit web-ul), dar UI nu mai depinde de browser.
+Aplicația nu mai include controlere REST și nu pornește niciun server web. Interfața JavaFX interacționează direct cu serviciile interne.
 
 ## Configurarea API-urilor bancare reale
 
-In `src/main/resources/application.yml` puteti seta URL-urile si cheile API pentru BCR si BT:
+Configurarea API-urilor bancare reale: URL-urile și cheile pot fi gestionate ulterior. Implicit, dacă nu există URL/cheie, clienții folosesc date demo.
 
-```yaml
-multibank:
-  bcr:
-    base-url: "https://api.bcr.ro"
-    api-key: "token-bcr"
-  bt:
-    base-url: "https://api.bancatransilvania.ro"
-    api-key: "token-bt"
-```
-
-Daca valorile sunt goale, aplicatia foloseste date demonstrative pentru a oferi functionalitatile principale fara integrare externa.
 
 ## Testare
 

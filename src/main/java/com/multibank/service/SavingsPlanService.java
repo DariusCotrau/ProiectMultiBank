@@ -5,14 +5,12 @@ import com.multibank.dto.SavingsPlanRequest;
 import com.multibank.dto.SavingsPlanResponse;
 import com.multibank.repository.SavingsPlanRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
 public class SavingsPlanService {
 
     private final SavingsPlanRepository savingsPlanRepository;

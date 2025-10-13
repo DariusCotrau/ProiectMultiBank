@@ -3,18 +3,15 @@ package com.multibank.integration;
 import com.multibank.config.BankIntegrationProperties;
 import com.multibank.domain.TransactionCategory;
 import com.multibank.domain.TransactionDirection;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-@Component
 public class BtBankClient extends AbstractRestBankClient {
 
-    public BtBankClient(RestTemplate restTemplate, BankIntegrationProperties properties) {
-        super(restTemplate, properties.getBt());
+    public BtBankClient(BankIntegrationProperties properties) {
+        super(properties.getBt());
     }
 
     @Override

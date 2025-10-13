@@ -7,15 +7,12 @@ import com.multibank.integration.ExternalBankAccount;
 import com.multibank.integration.ExternalTransaction;
 import com.multibank.repository.BankAccountRepository;
 import com.multibank.repository.TransactionRepository;
-import jakarta.transaction.Transactional;
-import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Service
 public class BankSynchronizationService {
 
     private final List<BankApiClient> bankClients;
@@ -30,7 +27,6 @@ public class BankSynchronizationService {
         this.transactionRepository = transactionRepository;
     }
 
-    @Transactional
     public void synchronizeAll() {
         for (BankApiClient bankClient : bankClients) {
             synchronizeBank(bankClient);

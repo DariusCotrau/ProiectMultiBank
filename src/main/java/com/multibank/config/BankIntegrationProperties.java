@@ -1,10 +1,5 @@
 package com.multibank.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
-
-@Configuration
-@ConfigurationProperties(prefix = "multibank")
 public class BankIntegrationProperties {
 
     private final BankProperties bcr = new BankProperties();

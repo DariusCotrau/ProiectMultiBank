@@ -1,6 +1,6 @@
 package com.multibank.desktop;
 
-import com.multibank.MultiBankApplication;
+import com.multibank.config.DesktopContext;
 import com.multibank.dto.BankAccountResponse;
 import com.multibank.domain.TransactionCategory;
 import com.multibank.dto.SpendingChartPoint;
@@ -30,9 +30,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Modality;
-import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.ConfigurableApplicationContext;
 import jfxtras.styles.jmetro.JMetro;
 import jfxtras.styles.jmetro.Style;
 
@@ -45,7 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class DesktopApp extends Application {
 
-    private static ConfigurableApplicationContext springContext;
+    private static DesktopContext appContext;
 
     private BankAccountService bankAccountService;
     private BankSynchronizationService bankSynchronizationService;
@@ -53,7 +50,8 @@ public class DesktopApp extends Application {
     private TransactionService transactionService;
     private SavingsPlanService savingsPlanService;
 
-    private final TableView<BankAccountResponse> accountsTable = new TableView<>();
+    private final javafx.scene.control.Pagination accountsPagination = new javafx.scene.control.Pagination();
+    private java.util.List<BankAccountResponse> accountPages = new java.util.ArrayList<>();
     private final TableView<TransactionResponse> transactionsTable = new TableView<>();
     private final TableView<SavingsPlanResponse> savingsTable = new TableView<>();
     private final Label statusBar = new Label("Gata.");
@@ -63,15 +61,13 @@ public class DesktopApp extends Application {
 
     @Override
     public void init() {
-        springContext = new SpringApplicationBuilder(MultiBankApplication.class)
-                .web(WebApplicationType.NONE)
-                .run();
+        appContext = new DesktopContext();
 
-        bankAccountService = springContext.getBean(BankAccountService.class);
-        bankSynchronizationService = springContext.getBean(BankSynchronizationService.class);
-        analyticsService = springContext.getBean(AnalyticsService.class);
-        transactionService = springContext.getBean(TransactionService.class);
-        savingsPlanService = springContext.getBean(SavingsPlanService.class);
+        bankAccountService = appContext.getBankAccountService();
+        bankSynchronizationService = appContext.getBankSynchronizationService();
+        analyticsService = appContext.getAnalyticsService();
+        transactionService = appContext.getTransactionService();
+        savingsPlanService = appContext.getSavingsPlanService();
 
         // Hardcoded default user until DB integration
         users.putIfAbsent("dariusc", "parola123");
@@ -150,8 +146,17 @@ public class DesktopApp extends Application {
         stage.setScene(scene);
         stage.show();
 
-        // Load initial data
+        // Load initial data and auto-sync demo data if needed
         reloadAccounts();
+        maybeAutoSync();
+    }
+
+    private void maybeAutoSync() {
+        runAsync("Verific date...", bankAccountService::getAllAccounts, list -> {
+            if (list == null || list.isEmpty()) {
+                synchronizeBanks();
+            }
+        });
     }
 
     private boolean showLoginDialog(Stage owner) {
@@ -160,36 +165,43 @@ public class DesktopApp extends Application {
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Autentificare");
 
-        Label title = new Label("Autentificare");
-        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
-        Label hint = new Label("Utilizator implicit: 'dariusc' / parola: 'parola123'");
+        Label title = new Label("Bun venit 👋");
+        title.getStyleClass().add("auth-title");
+        Label hint = new Label("Autentifică-te pentru a continua");
+        hint.getStyleClass().add("auth-subtitle");
+        Label demo = new Label("Demo: utilizator 'dariusc' / parola 'parola123'");
+        demo.getStyleClass().add("auth-hint");
 
         TextField userField = new TextField();
         userField.setPromptText("Utilizator");
+        HBox userGroup = new HBox(8);
+        userGroup.getStyleClass().add("auth-input-group");
+        javafx.scene.Node userIcon = new org.kordamp.ikonli.javafx.FontIcon("fas-user");
+        userIcon.getStyleClass().add("input-icon");
+        HBox.setHgrow(userField, Priority.ALWAYS);
+        userGroup.getChildren().addAll(userIcon, userField);
+
         PasswordField passField = new PasswordField();
         passField.setPromptText("Parola");
-        passField.setPromptText("Parola (opțional)");
+        HBox passGroup = new HBox(8);
+        passGroup.getStyleClass().add("auth-input-group");
+        javafx.scene.Node lockIcon = new org.kordamp.ikonli.javafx.FontIcon("fas-lock");
+        lockIcon.getStyleClass().add("input-icon");
+        HBox.setHgrow(passField, Priority.ALWAYS);
+        passGroup.getChildren().addAll(lockIcon, passField);
 
         Label error = new Label();
-        error.setStyle("-fx-text-fill: #ff6b6b;");
+        error.getStyleClass().add("auth-error");
 
         Button loginBtn = new Button("Login");
-        Button signupBtn = new Button("Signup");
+        Button signupBtn = new Button("Creează cont");
         Button cancelBtn = new Button("Renunță");
+        loginBtn.getStyleClass().add("btn-primary");
+        signupBtn.getStyleClass().add("btn-ghost");
         loginBtn.setDefaultButton(true);
         cancelBtn.setCancelButton(true);
 
-        Runnable attempt = () -> {
-            String u = userField.getText() == null ? "" : userField.getText().trim();
-            if ("dariusc".equalsIgnoreCase(u)) {
-                currentUser = u;
-                dialog.close();
-            } else {
-                error.setText("Utilizator invalid. Încearcă: dariusc");
-            }
-        };
-        loginBtn.setOnAction(e -> attempt.run());
-        // Override handler to enforce username+password via in-memory users
+        // Login handler (in-memory users)
         loginBtn.setOnAction(e -> {
             String u = userField.getText() == null ? "" : userField.getText().trim();
             String p = passField.getText() == null ? "" : passField.getText();
@@ -210,15 +222,20 @@ public class DesktopApp extends Application {
             }
         });
         cancelBtn.setOnAction(e -> { currentUser = null; dialog.close(); });
-        // Ensure final prompt text is set correctly
-        passField.setPromptText("Parola");
 
         HBox actions = new HBox(10, loginBtn, signupBtn, cancelBtn);
-        VBox box = new VBox(10, title, hint, userField, passField, error, actions);
-        box.setPadding(new Insets(16));
-        Scene scene = new Scene(box, 360, 220);
+        actions.getStyleClass().add("auth-actions");
+
+        VBox card = new VBox(12, title, hint, demo, userGroup, passGroup, error, actions);
+        card.getStyleClass().add("auth-card");
+        card.setPadding(new Insets(18));
+
+        VBox wrapper = new VBox(card);
+        wrapper.setPadding(new Insets(16));
+        wrapper.setFillWidth(true);
+
+        Scene scene = new Scene(wrapper, 520, 340);
         try {
-            // Apply same look if available
             if (jMetro == null) {
                 jMetro = new JMetro(Style.LIGHT);
             }
@@ -229,7 +246,10 @@ public class DesktopApp extends Application {
                 );
             } catch (Exception ignored) {}
         } catch (Throwable ignored) {}
+
+        dialog.setResizable(false);
         dialog.setScene(scene);
+        dialog.centerOnScreen();
         dialog.showAndWait();
         return currentUser != null;
     }
@@ -241,20 +261,42 @@ public class DesktopApp extends Application {
         dialog.setTitle("Înregistrare");
 
         Label title = new Label("Creează cont nou");
-        title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        title.getStyleClass().add("auth-title");
 
         TextField userField = new TextField();
         userField.setPromptText("Utilizator");
+        HBox userGroup = new HBox(8);
+        userGroup.getStyleClass().add("auth-input-group");
+        javafx.scene.Node userIcon = new org.kordamp.ikonli.javafx.FontIcon("fas-user");
+        userIcon.getStyleClass().add("input-icon");
+        HBox.setHgrow(userField, Priority.ALWAYS);
+        userGroup.getChildren().addAll(userIcon, userField);
+
         PasswordField passField = new PasswordField();
         passField.setPromptText("Parola");
+        HBox passGroup = new HBox(8);
+        passGroup.getStyleClass().add("auth-input-group");
+        javafx.scene.Node lockIcon1 = new org.kordamp.ikonli.javafx.FontIcon("fas-lock");
+        lockIcon1.getStyleClass().add("input-icon");
+        HBox.setHgrow(passField, Priority.ALWAYS);
+        passGroup.getChildren().addAll(lockIcon1, passField);
+
         PasswordField confirmField = new PasswordField();
         confirmField.setPromptText("Confirmă parola");
+        HBox confirmGroup = new HBox(8);
+        confirmGroup.getStyleClass().add("auth-input-group");
+        javafx.scene.Node lockIcon2 = new org.kordamp.ikonli.javafx.FontIcon("fas-lock");
+        lockIcon2.getStyleClass().add("input-icon");
+        HBox.setHgrow(confirmField, Priority.ALWAYS);
+        confirmGroup.getChildren().addAll(lockIcon2, confirmField);
 
         Label error = new Label();
-        error.setStyle("-fx-text-fill: #ff6b6b;");
+        error.getStyleClass().add("auth-error");
 
         Button createBtn = new Button("Creează");
         Button cancelBtn = new Button("Anulează");
+        createBtn.getStyleClass().add("btn-primary");
+        cancelBtn.getStyleClass().add("btn-ghost");
         createBtn.setDefaultButton(true);
         cancelBtn.setCancelButton(true);
 
@@ -277,9 +319,14 @@ public class DesktopApp extends Application {
         cancelBtn.setOnAction(e -> { created[0] = null; dialog.close(); });
 
         HBox actions = new HBox(10, createBtn, cancelBtn);
-        VBox box = new VBox(10, title, userField, passField, confirmField, error, actions);
-        box.setPadding(new Insets(16));
-        Scene scene = new Scene(box, 360, 240);
+        actions.getStyleClass().add("auth-actions");
+        VBox card = new VBox(12, title, userGroup, passGroup, confirmGroup, error, actions);
+        card.getStyleClass().add("auth-card");
+        card.setPadding(new Insets(18));
+        VBox wrapper = new VBox(card);
+        wrapper.setPadding(new Insets(16));
+        wrapper.setFillWidth(true);
+        Scene scene = new Scene(wrapper, 420, 300);
         try {
             if (jMetro == null) jMetro = new JMetro(Style.LIGHT);
             jMetro.setScene(scene);
@@ -289,7 +336,9 @@ public class DesktopApp extends Application {
                 );
             } catch (Exception ignored) {}
         } catch (Throwable ignored) {}
+        dialog.setResizable(false);
         dialog.setScene(scene);
+        dialog.centerOnScreen();
         dialog.showAndWait();
         return created[0];
     }
@@ -325,7 +374,6 @@ public class DesktopApp extends Application {
         return b;
     }
 
-    @SuppressWarnings("unchecked")
     private Tab buildAccountsTab() {
         Tab tab = new Tab("Conturi");
 
@@ -335,24 +383,22 @@ public class DesktopApp extends Application {
         HBox toolbar = new HBox(10, syncBtn, reloadBtn);
         toolbar.setPadding(new Insets(10));
 
-        // Table
-        accountsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        TableColumn<BankAccountResponse, String> bankCol = new TableColumn<>("Bancă");
-        bankCol.setCellValueFactory(c -> new SimpleStringProperty(nullSafe(c.getValue().getBankName())));
-        TableColumn<BankAccountResponse, String> numberCol = new TableColumn<>("Număr cont");
-        numberCol.setCellValueFactory(c -> new SimpleStringProperty(nullSafe(c.getValue().getAccountNumber())));
-        TableColumn<BankAccountResponse, String> ibanCol = new TableColumn<>("IBAN");
-        ibanCol.setCellValueFactory(c -> new SimpleStringProperty(nullSafe(c.getValue().getIban())));
-        TableColumn<BankAccountResponse, String> typeCol = new TableColumn<>("Tip");
-        typeCol.setCellValueFactory(c -> new SimpleStringProperty(nullSafe(c.getValue().getType())));
-        TableColumn<BankAccountResponse, String> currencyCol = new TableColumn<>("Monedă");
-        currencyCol.setCellValueFactory(c -> new SimpleStringProperty(nullSafe(c.getValue().getCurrency())));
-        TableColumn<BankAccountResponse, BigDecimal> balanceCol = new TableColumn<>("Sold");
-        balanceCol.setCellValueFactory(c -> new SimpleObjectProperty<>(c.getValue().getBalance()));
-        accountsTable.getColumns().setAll(bankCol, numberCol, ibanCol, typeCol, currencyCol, balanceCol);
+        // Pagination based account cards
+        accountsPagination.setMaxWidth(Double.MAX_VALUE);
+        accountsPagination.setPageFactory(index -> {
+            if (accountPages == null || accountPages.isEmpty()) {
+                VBox empty = new VBox(new Label("Niciun cont. Apasă 'Sincronizează'."));
+                empty.setPadding(new Insets(20));
+                return empty;
+            }
+            if (index < 0 || index >= accountPages.size()) {
+                return new Label("");
+            }
+            return buildAccountCard(accountPages.get(index));
+        });
 
-        VBox content = new VBox(5, toolbar, accountsTable);
-        VBox.setVgrow(accountsTable, Priority.ALWAYS);
+        VBox content = new VBox(5, toolbar, accountsPagination);
+        VBox.setVgrow(accountsPagination, Priority.ALWAYS);
         content.setPadding(new Insets(10));
 
         syncBtn.setOnAction(e -> synchronizeBanks());
@@ -360,6 +406,78 @@ public class DesktopApp extends Application {
 
         tab.setContent(content);
         return tab;
+    }
+
+    private VBox buildAccountCard(BankAccountResponse acc) {
+        javafx.scene.layout.StackPane card = new javafx.scene.layout.StackPane();
+        card.getStyleClass().add("account-card");
+        card.setPrefSize(520, 260);
+
+        String imgUrl;
+        try {
+            java.net.URL res = getClass().getResource("/desktop/card.jpg");
+            imgUrl = res != null ? res.toExternalForm() : new java.io.File("utils/card.jpg").toURI().toString();
+        } catch (Exception ex) {
+            imgUrl = new java.io.File("utils/card.jpg").toURI().toString();
+        }
+        javafx.scene.image.ImageView bg = new javafx.scene.image.ImageView(new javafx.scene.image.Image(imgUrl, 0, 0, true, true));
+        bg.setPreserveRatio(true);
+        bg.setSmooth(true);
+        bg.setManaged(false); // do not affect layout calculations
+        bg.fitWidthProperty().bind(card.widthProperty());
+        bg.fitHeightProperty().bind(card.heightProperty());
+
+        javafx.scene.shape.Rectangle shade = new javafx.scene.shape.Rectangle();
+        shade.widthProperty().bind(card.widthProperty());
+        shade.heightProperty().bind(card.heightProperty());
+        shade.setFill(new javafx.scene.paint.LinearGradient(0, 0, 0, 1, true, javafx.scene.paint.CycleMethod.NO_CYCLE,
+                new javafx.scene.paint.Stop(0, javafx.scene.paint.Color.color(0,0,0,0.10)),
+                new javafx.scene.paint.Stop(1, javafx.scene.paint.Color.color(0,0,0,0.55))));
+        shade.setManaged(false); // overlay, not part of layout size
+
+        javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle();
+        clip.widthProperty().bind(card.widthProperty());
+        clip.heightProperty().bind(card.heightProperty());
+        clip.setArcWidth(24);
+        clip.setArcHeight(24);
+        card.setClip(clip);
+
+        VBox content = new VBox(6);
+        content.getStyleClass().add("card-content");
+        content.setPadding(new Insets(18));
+
+        Label title = new Label((nullSafe(acc.getBankName())) + (acc.getType() != null ? (" • " + acc.getType()) : ""));
+        title.getStyleClass().add("title");
+        Label number = new Label("Cont: " + nullSafe(acc.getAccountNumber()));
+        number.getStyleClass().add("caption");
+        Label iban = new Label("IBAN: " + nullSafe(acc.getIban()));
+        iban.getStyleClass().add("caption");
+
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        Label balance = new Label((acc.getBalance() == null ? "0" : acc.getBalance().toPlainString()) + " " + nullSafe(acc.getCurrency()));
+        balance.getStyleClass().add("balance");
+
+        HBox actions = new HBox(10);
+        Button seeTx = new Button("Vezi tranzacții");
+        seeTx.getStyleClass().add("btn-ghost");
+        seeTx.setOnAction(e -> {
+            TabPane tp = ((TabPane) ((BorderPane) statusBar.getScene().getRoot()).getCenter());
+            tp.getSelectionModel().select(1);
+        });
+        actions.getChildren().addAll(seeTx);
+
+        content.getChildren().addAll(title, number, iban, spacer, balance, actions);
+        card.getChildren().addAll(bg, shade, content);
+
+        // Fill available page area (Pagination is already set to grow)
+        card.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        javafx.scene.layout.StackPane.setAlignment(content, javafx.geometry.Pos.TOP_LEFT);
+        VBox wrapper = new VBox(card);
+        wrapper.setFillWidth(true);
+        VBox.setVgrow(card, Priority.ALWAYS);
+        return wrapper;
     }
 
     	private Tab buildAnalyticsTab() {
@@ -428,6 +546,7 @@ public class DesktopApp extends Application {
 
         // Table
         transactionsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        transactionsTable.setPlaceholder(new Label("Nicio tranzacție. Folosește filtrele și 'Caută'."));
         TableColumn<TransactionResponse, String> dateCol = new TableColumn<>("Data");
         DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         dateCol.setCellValueFactory(c -> new SimpleStringProperty(
@@ -446,7 +565,7 @@ public class DesktopApp extends Application {
         amtCol.setCellValueFactory(c -> new SimpleStringProperty(
                 (c.getValue().getAmount() == null ? "" : c.getValue().getAmount().toPlainString()) +
                         (c.getValue().getCurrency() == null ? "" : (" " + c.getValue().getCurrency()))));
-        transactionsTable.getColumns().setAll(dateCol, descCol, merchCol, catCol, dirCol, amtCol);
+        transactionsTable.getColumns().setAll(java.util.List.of(dateCol, descCol, merchCol, catCol, dirCol, amtCol));
 
         VBox content = new VBox(6, filters, transactionsTable);
         content.setPadding(new Insets(10));
@@ -515,7 +634,7 @@ public class DesktopApp extends Application {
                 c.getValue().getFocusCategory() == null ? "" : c.getValue().getFocusCategory().name()));
         TableColumn<SavingsPlanResponse, String> progCol = new TableColumn<>("Progres");
         progCol.setCellValueFactory(c -> new SimpleStringProperty(String.format("%.2f%%", c.getValue().getProgress())));
-        savingsTable.getColumns().setAll(nameCol, tgtCol, curCol, dateCol, fcatCol, progCol);
+        savingsTable.getColumns().setAll(java.util.List.of(nameCol, tgtCol, curCol, dateCol, fcatCol, progCol));
 
         // Actions on selection
         Button contributeBtn = new Button("Contribuie");
@@ -636,20 +755,16 @@ public class DesktopApp extends Application {
 
     private void reloadAccounts() {
         runAsync("Încărcare conturi...", bankAccountService::getAllAccounts, list -> {
-            ObservableList<BankAccountResponse> data = FXCollections.observableArrayList(list);
-            accountsTable.setItems(data);
+            accountPages = list == null ? java.util.List.of() : list;
+            accountsPagination.setPageCount(Math.max(1, accountPages.size()));
+            accountsPagination.setCurrentPageIndex(0);
             setStatus("Conturi încărcate");
         });
     }
 
     private void reloadAnalytics() {
-        // Overload to refresh internal charts within the Analytics tab after first render
-        // This will search for charts in the current scene and update them if present
-        Scene scene = statusBar.getScene();
-        if (scene == null) return;
-        LineChart<?, ?> monthly = (LineChart<?, ?>) scene.lookup(".chart");
-        PieChart pie = (PieChart) scene.lookup(".chart-pie");
-        // Safer: directly traverse content is omitted for brevity; use explicit method when button is pressed
+        // Intenționat no-op: analizele sunt reîncărcate explicit prin buton,
+        // pentru a evita lookup-uri fragile în scenă.
     }
 
     private void reloadAnalytics(LineChart<String, Number> monthlyChart, PieChart categoryChart) {
@@ -715,9 +830,7 @@ public class DesktopApp extends Application {
 
     @Override
     public void stop() {
-        if (springContext != null) {
-            springContext.close();
-        }
+        if (appContext != null) appContext.close();
         Platform.exit();
     }
 

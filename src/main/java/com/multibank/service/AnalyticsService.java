@@ -5,7 +5,6 @@ import com.multibank.domain.TransactionCategory;
 import com.multibank.domain.TransactionDirection;
 import com.multibank.dto.SpendingChartPoint;
 import com.multibank.repository.TransactionRepository;
-import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -17,7 +16,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-@Service
 public class AnalyticsService {
 
     private final TransactionRepository transactionRepository;

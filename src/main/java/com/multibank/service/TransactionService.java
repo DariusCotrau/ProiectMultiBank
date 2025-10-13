@@ -4,13 +4,11 @@ import com.multibank.domain.Transaction;
 import com.multibank.domain.TransactionCategory;
 import com.multibank.dto.TransactionResponse;
 import com.multibank.repository.TransactionRepository;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;

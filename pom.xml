@@ -2,50 +2,70 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.5</version>
-        <relativePath/>
-    </parent>
     <groupId>com.multibank</groupId>
     <artifactId>multibank-aggregator</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>MultiBank Aggregator</name>
-    <description>Aplicatie Spring Boot pentru integrarea BCR si BT</description>
+    <description>Aplicație desktop JavaFX pentru integrarea BCR și BT (fără Spring)</description>
 
     <properties>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javafx.version>17.0.8</javafx.version>
+        <!-- Spring removed: no Spring Framework or Spring Data used -->
+        <hibernate.version>6.2.7.Final</hibernate.version>
+        <validation.api.version>3.0.2</validation.api.version>
+        <hibernate.validator.version>8.0.1.Final</hibernate.validator.version>
         <!-- Optional: set with -Djpackage.icon=C:/path/to/app.ico -->
         <jpackage.icon></jpackage.icon>
     </properties>
 
     <dependencies>
+        <!-- No Spring dependencies (desktop app uses JavaFX + plain JPA) -->
 
+        <!-- JPA provider / DB -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>${hibernate.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+            <version>3.1.0</version>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
+            <version>2.2.224</version>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>jakarta.transaction</groupId>
+            <artifactId>jakarta.transaction-api</artifactId>
+            <version>2.0.1</version>
+        </dependency>
+
+        <!-- Bean Validation (Jakarta) -->
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>${validation.api.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>${hibernate.validator.version}</version>
+        </dependency>
+        <!-- EL for validator messages (runtime) -->
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>jakarta.el</artifactId>
+            <version>4.0.2</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- ZXing for QR -->
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
@@ -56,11 +76,7 @@
             <artifactId>javase</artifactId>
             <version>3.5.1</version>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
+
         <!-- JavaFX runtime for Windows (desktop UI, no browser) -->
         <dependency>
             <groupId>org.openjfx</groupId>
@@ -80,6 +96,7 @@
             <version>${javafx.version}</version>
             <classifier>win</classifier>
         </dependency>
+
         <!-- JMetro: modern JavaFX theme -->
         <dependency>
             <groupId>org.jfxtras</groupId>
@@ -97,7 +114,7 @@
             <artifactId>ikonli-fontawesome5-pack</artifactId>
             <version>12.3.1</version>
         </dependency>
-</dependencies>
+    </dependencies>
 
     <pluginRepositories>
         <pluginRepository>
@@ -113,14 +130,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>com.multibank.desktop.DesktopApp</mainClass>
-                    <classifier>exec</classifier>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
@@ -129,10 +138,11 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <release>${java.version}</release>
                 </configuration>
             </plugin>
             <plugin>
@@ -186,7 +196,9 @@
                                         <argument>--main-jar</argument>
                                         <argument>${project.build.finalName}.jar</argument>
                                         <argument>--main-class</argument>
-                                        <argument>org.springframework.boot.loader.launch.JarLauncher</argument>
+                                        <argument>com.multibank.desktop.DesktopApp</argument>
+                                        <argument>--class-path</argument>
+                                        <argument>lib/*</argument>
                                         <argument>--vendor</argument>
                                         <argument>MultiBank</argument>
                                     </arguments>
@@ -226,7 +238,9 @@
                                         <argument>--main-jar</argument>
                                         <argument>${project.build.finalName}.jar</argument>
                                         <argument>--main-class</argument>
-                                        <argument>org.springframework.boot.loader.launch.JarLauncher</argument>
+                                        <argument>com.multibank.desktop.DesktopApp</argument>
+                                        <argument>--class-path</argument>
+                                        <argument>lib/*</argument>
                                         <argument>--vendor</argument>
                                         <argument>MultiBank</argument>
                                     </arguments>

@@ -3,12 +3,10 @@ package com.multibank.service;
 import com.multibank.domain.BankAccount;
 import com.multibank.dto.BankAccountResponse;
 import com.multibank.repository.BankAccountRepository;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
 public class BankAccountService {
 
     private final BankAccountRepository bankAccountRepository;
